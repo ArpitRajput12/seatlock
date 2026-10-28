@@ -1,0 +1,57 @@
+{
+  "name": "seatlock",
+  "version": "1.0.0",
+  "description": "Concurrency-focused movie ticket booking system",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon -r dotenv/config src/server.js",
+    "start": "node src/server.js",
+    "build": "prisma generate",
+    "worker": "node src/jobs/worker.runner.js",
+    "worker:dev": "nodemon -r dotenv/config src/jobs/worker.runner.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node seed-real-theaters.js",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "postgresql",
+    "prisma",
+    "redis",
+    "bullmq",
+    "razorpay",
+    "concurrency"
+  ],
+  "author": "Arpit Sisodia",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^6.3.4",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
+    "pg": "^8.23.0",
+    "pino": "^10.3.1",
+    "prisma": "^7.10.0",
+    "razorpay": "^2.9.8",
+    "redlock": "^5.0.0-beta.2",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
+  }
+}

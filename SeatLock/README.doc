@@ -1,0 +1,351 @@
+# SeatLock — Movie Ticket Booking System
+
+A production-oriented Movie Ticket Booking System built with **Node.js, Express, PostgreSQL, Prisma, Redis, BullMQ and Stripe**.
+
+The main engineering goal is **correctness under concurrency**: when multiple users try to book the same seat at the same time, the system must ensure that a seat cannot be successfully booked by two users.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| API | Express.js |
+| Database | PostgreSQL |
+| ORM | Prisma |
+| Cache / Lock | Redis |
+| Distributed Locking | Redlock |
+| Background Jobs | BullMQ |
+| Payments | Stripe |
+| Authentication | JWT + bcrypt |
+| Validation | Zod |
+| Logging | Pino |
+| Testing | Jest + Supertest |
+| Deployment | Docker / Docker Compose |
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Client[Client / Frontend] --> API[Express API]
+    API --> Auth[JWT Auth]
+    API --> Validation[Zod Validation]
+    API --> RateLimit[Redis Token Bucket]
+    API --> Booking[Booking Module]
+    API --> Payment[Payment Module]
+    API --> Cache[Cache-Aside]
+    Booking --> DB[(PostgreSQL)]
+    Booking --> Redis[(Redis)]
+    Payment --> DB
+    Payment --> Stripe[Stripe]
+    Stripe --> Webhook[Stripe Webhook]
+    Webhook --> DB
+    Webhook --> Saga[Saga / Confirmation]
+    DB --> Outbox[Outbox Events]
+    Outbox --> Queue[BullMQ]
+    Queue --> Redis
+    Redis --> Worker[Worker]
+    Worker --> DB
+    Worker --> Booking
+```
+
+Detailed system design is in **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+
+## Project Structure
+
+```text
+SeatLock/
+├── src/
+│   ├── config/
+│   ├── infrastructure/
+│   ├── jobs/
+│   ├── middlewares/
+│   ├── repositories/
+│   ├── routes/
+│   ├── services/
+│   ├── tests/
+│   ├── utils/
+│   ├── validations/
+│   ├── app.js
+│   └── server.js
+├── prisma/
+│   ├── schema.prisma
+│   └── migrations/
+├── .env
+├── .env.example
+├── jest.config.js
+├── package.json
+├── package-lock.json
+├── prisma.config.ts
+└── README.md
+```
+
+## Domain Model
+
+```text
+Movie
+  └── Show
+       └── Screen
+            └── Seat
+
+Show + Seat
+    └── ShowSeat
+         ├── AVAILABLE
+         ├── HELD
+         └── BOOKED
+
+User
+  └── Booking
+       ├── BookingSeat
+       └── Payment
+```
+
+`Seat` is the physical seat definition. `ShowSeat` represents that seat for one particular show and therefore owns the booking state.
+
+## Booking Flow
+
+```text
+POST /api/v1/bookings
+        ↓
+Authentication → Validation → Rate Limit
+        ↓
+PostgreSQL Transaction
+        ↓
+Lock selected ShowSeat rows with SELECT ... FOR UPDATE
+        ↓
+Verify AVAILABLE
+        ↓
+Create PENDING Booking
+        ↓
+Set seats HELD + expiry
+        ↓
+Create BookingSeat records
+        ↓
+Create Outbox event
+        ↓
+COMMIT
+```
+
+### Why locking matters
+
+Two concurrent requests may both read `AVAILABLE` if the check and update are not protected. PostgreSQL row locking serializes access to the critical row. One request succeeds; the other observes the changed state and receives a conflict.
+
+Multiple selected seats are locked in deterministic order to reduce deadlock risk.
+
+## Concurrency Strategies
+
+### Pessimistic locking
+
+The primary booking implementation uses PostgreSQL row-level locking:
+
+```sql
+SELECT ...
+FROM "ShowSeat"
+WHERE id = $1
+FOR UPDATE;
+```
+
+### Optimistic locking
+
+The alternative implementation uses the `version` field. An update succeeds only when the expected version still matches; the successful update increments the version.
+
+### Redlock
+
+Redis + Redlock provides distributed coordination when multiple API instances need to protect a critical section. PostgreSQL remains the authoritative source of persistent seat state.
+
+## Payment Flow
+
+```text
+Booking PENDING + seats HELD
+        ↓
+Create Stripe PaymentIntent
+        ↓
+Customer completes payment
+        ↓
+Stripe Webhook
+        ↓
+Verify webhook signature
+        ↓
+WebhookEvent idempotency check
+        ↓
+Payment = SUCCEEDED
+        ↓
+Saga / confirmation
+        ↓
+Booking confirmed + seats BOOKED
+```
+
+The backend does not trust a client-side payment-success flag. Stripe webhook verification is the server-to-server confirmation mechanism.
+
+## Idempotency
+
+Payment creation uses an `Idempotency-Key` and a request fingerprint.
+
+```text
+same key + same request   → existing logical result
+same key + different body → reject
+```
+
+Stripe payment creation also uses a Stripe idempotency key.
+
+## Saga + Outbox
+
+A payment workflow spans PostgreSQL and Stripe, so it cannot be protected by one global ACID transaction. Saga-style compensation handles failures in later steps.
+
+Critical asynchronous events are persisted with the business transaction using the Outbox Pattern:
+
+```text
+DB transaction
+   ├── business state change
+   └── OutboxEvent
+          ↓ COMMIT
+     Dispatcher
+          ↓
+       BullMQ
+          ↓
+       Worker
+```
+
+## Automatic Seat Release
+
+Unpaid holds are temporary:
+
+```text
+AVAILABLE → HELD
+              ↓
+       delayed BullMQ job
+              ↓
+       verify still HELD + expired
+              ↓
+         AVAILABLE
+```
+
+The worker re-checks database state before releasing the seat.
+
+## Cache + Rate Limiting
+
+Cache-aside is used for appropriate read-heavy data, with Redis locking to reduce cache stampedes. Highly consistency-sensitive seat availability is not treated as a cached source of truth.
+
+Rate limiting uses a Redis token bucket and can apply different limits to general, authentication, booking and payment endpoints.
+
+## Observability & Security
+
+Implemented cross-cutting capabilities include:
+
+- Pino structured logging
+- Correlation IDs
+- Request/error logging
+- Centralized error handling
+- JWT authentication and authorization
+- bcrypt password hashing
+- Zod validation
+- Stripe webhook signature verification
+- Redis rate limiting
+- Graceful shutdown
+
+## Automated Tests
+
+Current automated suites:
+
+```text
+src/tests/booking.concurrency.test.js
+src/tests/optimisticBooking.concurrency.test.js
+src/tests/payment.idempotency.test.js
+```
+
+The concurrency tests intentionally race multiple requests against the same seat. Expected result:
+
+```text
+10 concurrent attempts
+201 → 1
+409 → 9
+successful BookingSeat records → 1
+```
+
+Run:
+
+```bash
+npm test
+```
+
+## Environment
+
+Use `.env.example` as the template. Typical variables:
+
+```text
+PORT
+NODE_ENV
+DATABASE_URL
+REDIS_URL
+JWT_ACCESS_SECRET
+JWT_REFRESH_SECRET
+JWT_ACCESS_EXPIRES_IN
+JWT_REFRESH_EXPIRES_IN
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+```
+
+Never commit `.env` or production secrets.
+
+## Local Development
+
+```bash
+npm install
+npm run dev
+npm test
+```
+
+If using the existing Redis container:
+
+```bash
+docker start seatlock-redis
+docker exec -it seatlock-redis redis-cli ping
+```
+
+Expected:
+
+```text
+PONG
+```
+
+## API Areas
+
+```text
+/api/v1/health
+/api/v1/auth
+/api/v1/movies
+/api/v1/theaters
+/api/v1/screens
+/api/v1/seats
+/api/v1/shows
+/api/v1/show-seats
+/api/v1/bookings
+/api/v1/optimistic-bookings
+/api/v1/redlock-bookings
+/api/v1/payments
+/api/v1/webhooks/stripe
+```
+
+## Core Engineering Invariants
+
+1. A `ShowSeat` cannot have more than one successful booking.
+2. An expired held seat must eventually become available.
+3. A Stripe webhook event must not be applied twice.
+4. A repeated idempotency key must not create a second logical payment operation.
+5. A committed critical state change must have its corresponding outbox event persisted in the same transaction.
+6. Background jobs must re-check current database state before destructive actions.
+
+## Production Roadmap
+
+```text
+Docker Compose
+   ↓
+PostgreSQL + Redis + API + Worker
+   ↓
+Health / readiness checks
+   ↓
+Integration verification
+   ↓
+EC2 deployment
+   ↓
+Nginx + HTTPS
+```

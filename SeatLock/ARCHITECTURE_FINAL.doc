@@ -1,0 +1,1090 @@
+*import* asyncHandler *from* "../utils/asyncHandler.js"**;**
+
+*import* {
+
+    sendSuccess**,**
+
+} *from* "../utils/apiResponse.js"**;**
+
+*import* {
+
+    HTTP\_STATUS**,**
+
+} *from* "../constants/httpStatus.js"**;**
+
+*import* {
+
+    createPaymentIntentService**,**
+
+    getPaymentByIdService**,**
+
+} *from* "../services/payment.service.js"**;**
+
+
+
+*/\**
+
+*============================================================*
+
+*CREATE PAYMENT INTENT*
+
+*============================================================*
+
+*\*/*
+
+const createPaymentIntent **=** asyncHandler(
+
+    *async* (**req,** **res**) **=>** {
+
+        const {
+
+            bookingId**,**
+
+        } **=** req**.***validated***.***body***;**
+
+
+
+        const result **=**
+
+            **await** createPaymentIntentService(
+
+                req**.***user***.***id***,**
+
+                bookingId
+
+            )**;**
+
+
+
+        **return** sendSuccess(
+
+            res**,**
+
+            {
+
+                statusCode**:**
+
+                    HTTP\_STATUS**.**CREATED**,**
+
+                message**:**
+
+                    "Payment intent created successfully"**,**
+
+                data**:** result**,**
+
+            }
+
+        )**;**
+
+    }
+
+)**;**
+
+
+
+*/\**
+
+*============================================================*
+
+*GET PAYMENT*
+
+*============================================================*
+
+*\*/*
+
+const getPayment **=** asyncHandler(
+
+    *async* (**req,** **res**) **=>** {
+
+        const payment **=**
+
+            **await** getPaymentByIdService(
+
+                req**.***validated***.***params***.***paymentId***,**
+
+                req**.***user***.***id*
+
+            )**;**
+
+
+
+        **return** sendSuccess(
+
+            res**,**
+
+            {
+
+                statusCode**:**
+
+                    HTTP\_STATUS**.**OK**,**
+
+                message**:**
+
+                    "Payment fetched successfully"**,**
+
+                data**:** {
+
+                    payment**,**
+
+                }**,**
+
+            }
+
+        )**;**
+
+    }
+
+)**;**
+
+
+
+*export* {
+
+    createPaymentIntent**,**
+
+    getPayment**,**
+
+}**;**
+
+*import* { z } *from* "zod"**;**
+
+const createPaymentSchema **=** z**.**object({
+
+    body**:** z**.**object({
+
+        bookingId**:** z**.**string()**.**uuid("Invalid booking ID")**,**
+
+    })**,**
+
+    params**:** z**.**object({})**,**
+
+    query**:** z**.**object({})**,**
+
+})**;**
+
+const paymentIdSchema **=** z**.**object({
+
+    body**:** z**.**object({})**,**
+
+    params**:** z**.**object({
+
+        paymentId**:** z**.**string()**.**uuid("Invalid payment ID")**,**
+
+    })**,**
+
+    query**:** z**.**object({})**,**
+
+})**;**
+
+*export* {
+
+    createPaymentSchema**,**
+
+    paymentIdSchema**,**
+
+}**;** 
+Today 12:15 AM
+*import* { Router } *from* "express"**;**
+
+*import* healthRoutes *from* "./health.routes.js"**;**
+
+*import* authRoutes *from* "./auth.routes.js"**;**
+
+*import* movieRoutes *from* "./movie.routes.js"**;**
+
+*import* theaterRoutes *from* "./theater.routes.js"**;**
+
+*import* screenRoutes *from* "./screen.routes.js"**;**
+
+*import* seatRoutes *from* "./seat.routes.js"**;**
+
+*import* showRoutes *from* "./show\.routes.js"**;**
+
+*import* showSeatRoutes *from* "./showSeat.routes.js"**;**
+
+*import* bookingRoutes *from* "./booking.routes.js"**;**
+
+*import* optimisticBookingRoutes *from* "./optimisticBooking.routes.js"**;**
+
+*import* redlockBookingRoutes *from* "./redlockBooking.routes.js"**;**
+
+*import* paymentRoutes *from* "./payment.routes.js"**;**
+
+*import* rateLimitMiddleware *from* "../middlewares/rateLimit.middleware.js"**;**
+
+*import* { RATE\_LIMIT } *from* "../constants/rateLimit.constants.js"**;**
+
+
+
+const router **=** Router()**;**
+
+router**.**use("/health"**,** healthRoutes)**;**
+
+router**.**use("/auth"**,** authRoutes)**;**
+
+router**.**use("/movies"**,** movieRoutes)**;**
+
+router**.**use("/theaters"**,** theaterRoutes)**;**
+
+router**.**use("/screens"**,** screenRoutes)**;**
+
+router**.**use("/seats"**,** seatRoutes)**;**
+
+router**.**use("/shows"**,** showRoutes)**;**
+
+router**.**use("/show-seats"**,** showSeatRoutes)**;**
+
+router**.**use("/bookings"**,** bookingRoutes)**;**
+
+router**.**use("/optimistic-bookings"**,** optimisticBookingRoutes)**;**
+
+router**.**use("/redlock-bookings"**,** redlockBookingRoutes)**;**
+
+router**.**use("/payments"**,** paymentRoutes)**;**
+
+router**.**use(
+
+    rateLimitMiddleware({
+
+        **...**RATE\_LIMIT**.**GENERAL**,**
+
+        keyPrefix**:** "general"**,**
+
+    })
+
+)**;**
+
+
+
+*export* **default** router**;**
+
+mene apna src ka photo send kiya h so isko dakho or jo tum ne abhi uper responce diya h mena abhi kuch bhe edit nahii kiya 
+
+Pasted markdown.md
+File
+te batao merako koi file ab delet to nahii karne?
+
+Haan, screenshot ke according kuch old test files ab delete kar sakte ho, kyunki proper Jest tests ab src/tests/ ke andar hain.
+
+❌ Root se ye 5 files delete kar do
+test-optimistic-race.js
+test-race.js
+test-redis.js
+test-redlock-race.js
+test-redlock.js
+
+Ye purane manual/race testing scripts hain. Ab humara official testing setup:
+
+src/
+└── tests/
+    ├── booking.concurrency.test.js
+    ├── optimisticBooking.concurrency.test.js
+    ├── payment.idempotency.test.js
+    └── setup.js
+⚠️ Inko bilkul delete mat karna
+src/
+├── infrastructure/
+├── jobs/
+├── middlewares/
+├── repositories/
+├── routes/
+├── services/
+├── tests/
+├── utils/
+├── validations/
+├── app.js
+└── server.js
+
+prisma/
+.env
+.env.example
+.gitignore
+jest.config.js
+package.json
+package-lock.json
+prisma.config.ts
+
+Specially src/tests/ ko mat delete karna — ye ab tumhare actual automated tests hain.
+
+So cleanup ke baad root roughly:
+
+SeatLock/
+├── src/
+├── prisma/
+├── .env
+├── .env.example
+├── .gitignore
+├── jest.config.js
+├── package.json
+├── package-lock.json
+└── prisma.config.ts
+
+Abhi aur koi file delete mat karo. Pehle ye 5 old test scripts remove karo, phir hum Docker/production step par move karenge.
+
+docker sa pahele merako ye do README + architecture diagram/documentation
+
+Done. Maine project ke current architecture ke according 2 documentation files prepare kar diye hain:
+
+README.md — project overview, tech stack, setup, APIs, concurrency, payment, testing, production roadmap.
+ARCHITECTURE.md — detailed architecture + Mermaid diagrams for:
+Modular monolith
+Booking flow
+Pessimistic locking
+Optimistic locking
+Redlock
+Stripe payment/webhook
+Saga
+Outbox
+BullMQ seat release
+Cache-aside
+Rate limiting
+Deployment architecture
+Files
+
+Download README.md
+
+Download ARCHITECTURE.md
+
+Project mein rakhna:
+
+SeatLock/
+├── README.md
+├── ARCHITECTURE.md
+├── src/
+├── prisma/
+├── .env
+├── .env.example
+├── package.json
+└── ...
+
+Ab Docker se pehle documentation complete hai. Next directly Docker Compose setup kar sakte hain. 
+
+README.md
+Document
+ARCHITECTURE.md
+Document
+ARCHITECTURE NAHII DOWLOAD ho rahe
+
+Haan, pehle wala link issue kar raha tha. Maine new working copy bana di hai.
+
+📄 Architecture Diagram & Documentation
+
+Download ARCHITECTURE_FINAL.md
+
+Isme complete:
+
+Modular Monolith Architecture
+Folder/layer architecture
+Database model
+Seat state machine
+Pessimistic locking
+Optimistic locking
+Redlock
+Stripe Payment + Webhook
+Idempotency
+Saga
+Outbox Pattern
+BullMQ Worker
+Automatic Seat Release
+Cache-aside
+Rate Limiting
+JWT
+Observability
+Graceful Shutdown
+Concurrency Test Architecture
+Production Deployment Architecture
+End-to-end booking/payment flow
+
+Is file ko directly SeatLock/ARCHITECTURE.md naam se save kar dena.
+
+ARCHITECTURE_FINAL.md
+Document
+
+Library
+/
+ARCHITECTURE_FINAL.md
+SeatLock — Architecture & System Design
+1. Architecture Style
+
+SeatLock follows a modular monolith architecture.
+
+Client / Frontend
+       |
+       v
++-----------------------+
+|      Express API      |
+| Auth / Validation     |
+| Rate Limit / Logging  |
++----------+------------+
+           |
+     +-----+-----+
+     |           |
+     v           v
+ Booking      Payment
+ Module       Module
+     |           |
+     v           v
+ PostgreSQL    Stripe
+     |
+     +------------------+
+     |                  |
+     v                  v
+  Outbox              Redis
+     |                  |
+     v                  +---- Cache
+   BullMQ               +---- Redlock
+     |
+     v
+  Worker
+2. Application Layers
+Routes
+  ↓
+Middleware
+  ↓
+Controllers
+  ↓
+Services
+  ↓
+Repositories
+  ↓
+PostgreSQL / Redis / External APIs
+Routes: HTTP method and URL mapping.
+Middleware: authentication, validation, rate limiting, correlation IDs, logging and error handling.
+Controllers: translate HTTP requests into service calls and responses.
+Services: contain business logic.
+Repositories: contain database access and concurrency-sensitive queries.
+3. Main Domain Model
+User
+ |
+ +---- Booking
+         |
+         +---- BookingSeat
+         |       |
+         |       +---- ShowSeat
+         |                |
+         |                +---- Seat
+         |
+         +---- Payment
+
+Movie
+ |
+ +---- Show
+        |
+        +---- Screen
+               |
+               +---- Seat
+
+Seat is the physical seat definition. ShowSeat represents the state of a seat for a particular show.
+
+Example:
+
+Seat A1
+
+Show 1 → BOOKED
+Show 2 → AVAILABLE
+Show 3 → HELD
+4. Seat State Machine
+             +-------------+
+             |  AVAILABLE  |
+             +------+------+
+                    |
+                  booking
+                    |
+                    v
+             +-------------+
+             |    HELD     |
+             +------+------+
+                    |
+             +------+------+
+             |             |
+          payment        expiry
+             |             |
+             v             v
+       +-----------+  +-------------+
+       |  BOOKED   |  |  AVAILABLE  |
+       +-----------+  +-------------+
+
+A HELD seat has an expiry time. If payment is not completed before expiry, the background worker releases the seat.
+
+5. Pessimistic Locking
+
+The primary booking implementation uses PostgreSQL row-level locking:
+
+SELECT
+    id,
+    "showId",
+    "seatId",
+    status,
+    "holdToken",
+    "holdExpiresAt",
+    version,
+    price
+FROM "ShowSeat"
+WHERE id = $1
+FOR UPDATE;
+
+Flow:
+
+BEGIN TRANSACTION
+       |
+       v
+Lock ShowSeat
+       |
+       v
+Check status
+   |         |
+AVAILABLE   HELD/BOOKED
+   |         |
+   v         v
+Create      Reject
+Booking
+   |
+   v
+Seat → HELD
+   |
+   v
+Create BookingSeat
+   |
+   v
+Create OutboxEvent
+   |
+   v
+COMMIT
+
+If multiple requests target the same row, PostgreSQL serializes access.
+
+Expected race:
+
+10 concurrent requests
+
+201 → 1
+409 → 9
+6. Deterministic Lock Ordering
+
+For multiple seats, selected ShowSeat IDs are sorted before locking.
+
+Without deterministic ordering:
+
+Transaction A: A1 → A2
+Transaction B: A2 → A1
+
+This can create a deadlock cycle. With deterministic ordering both transactions attempt A1 → A2.
+
+7. Optimistic Locking
+
+ShowSeat.version is used for optimistic concurrency control.
+
+Initial:
+version = 1
+status  = AVAILABLE
+
+Two requests read version 1. Only one update should win:
+
+Request A → update WHERE version = 1
+Request B → update WHERE version = 1
+
+Winner:
+version 1 → 2
+AVAILABLE → HELD
+
+The losing request detects the version conflict and fails/retries according to the service logic.
+
+8. Redis / Redlock
+             Load Balancer
+                  |
+        +---------+---------+
+        |                   |
+        v                   v
+    API Instance A      API Instance B
+        |                   |
+        +---------+---------+
+                  |
+                  v
+                Redis
+
+Redlock provides distributed coordination across application instances. Redis locking does not replace PostgreSQL correctness; PostgreSQL remains the authoritative source of persistent seat state.
+
+9. Payment Architecture
+Booking
+   |
+   | PENDING + HELD seats
+   v
+Create PaymentIntent
+   |
+   v
+Stripe
+   |
+Customer Payment
+   |
+   v
+Stripe Webhook
+   |
+   v
+Signature Verification
+   |
+   v
+Webhook Idempotency
+   |
+   v
+Payment = SUCCEEDED
+   |
+   v
+Saga Confirmation
+   |
+   v
+Booking = CONFIRMED
+Seats = BOOKED
+
+The backend does not trust a client-side payment-success flag.
+
+10. Stripe Webhook Security
+
+The Stripe webhook route is registered before the global JSON parser because signature verification requires the original raw request body.
+
+Raw HTTP body
+      |
+      v
+constructEvent()
+      |
+   +--+--+
+   |     |
+ invalid valid
+   |     |
+ reject process
+11. Webhook Idempotency
+
+Stripe may retry webhook delivery.
+
+Stripe Event
+     |
+     v
+WebhookEvent
+     |
+     +---- Already processed?
+             |
+        +----+----+
+        |         |
+       YES        NO
+        |         |
+       Stop      Process
+                  |
+                  v
+              Mark processed
+
+The provider event ID is unique, preventing duplicate processing.
+
+12. Payment Idempotency
+Same key + same request
+          |
+          v
+Return existing result
+Same key + different request
+          |
+          v
+Reject
+
+This protects against retry-driven duplicate payment creation.
+
+13. Saga Pattern
+
+Payment and booking involve multiple systems, so one global ACID transaction cannot cover all of them.
+
+Create Booking
+      |
+      v
+Hold Seats
+      |
+      v
+Create Payment
+      |
+      v
+Payment Succeeded
+      |
+      v
+Confirm Booking
+      |
+      v
+Book Seats
+
+If a later step fails:
+
+Failure
+  |
+  v
+Compensating Action
+  |
+  v
+Release Seats
+  |
+  v
+Cancel / Update Booking
+14. Outbox Pattern
+
+Important asynchronous events are written to PostgreSQL in the same transaction as the business state change.
+
+BEGIN
+ |
+ +-- Update Booking / Seat
+ |
+ +-- Insert OutboxEvent
+ |
+COMMIT
+ |
+ v
+Outbox Dispatcher
+ |
+ v
+BullMQ
+ |
+ v
+Worker
+
+If the application crashes after commit, the event still exists in PostgreSQL and can be dispatched later.
+
+15. BullMQ Worker
+PostgreSQL
+    |
+    v
+Outbox Event
+    |
+    v
+Dispatcher
+    |
+    v
+BullMQ / Redis
+    |
+    v
+Worker
+    |
+    +---- Seat Release
+    |
+    +---- Other Background Jobs
+16. Automatic Seat Release
+Seat = HELD
+Booking = PENDING
+holdExpiresAt = future time
+        |
+        v
+Delayed BullMQ job
+        |
+        v
+Lock ShowSeat
+        |
+        v
+Still HELD?
+        |
+   +----+----+
+   |         |
+  NO        YES
+   |         |
+Nothing   Hold expired?
+             |
+         +---+---+
+         |       |
+        NO      YES
+         |       |
+      Nothing    v
+            Seat → AVAILABLE
+            Booking → CANCELLED
+
+The worker checks current database state before releasing the seat.
+
+17. Cache-Aside
+Request
+   |
+   v
+ Redis
+ /   \
+HIT  MISS
+ |     |
+ v     v
+Return PostgreSQL
+       |
+       v
+   Store in Redis
+       |
+       v
+     Return
+
+A Redis lock protects cache population from a cache stampede. Seat availability is not treated as a normal cached source of truth.
+
+18. Rate Limiting
+Request
+   |
+   v
+Redis Token Bucket
+   |
+ +--+--+
+ |     |
+Token  No Token
+ |       |
+ v       v
+Allow   429
+
+Different limits are configured for general, authentication, booking and payment operations.
+
+19. Authentication
+Register → bcrypt hash → User
+
+Login → Verify password → Access Token + Refresh Token
+
+Protected API → Verify JWT → req.user → Controller
+20. Request Pipeline
+Client
+  |
+  v
+Correlation ID
+  |
+  v
+Request Logger
+  |
+  v
+Route
+  |
+  v
+Authentication
+  |
+  v
+Rate Limiter
+  |
+  v
+Zod Validation
+  |
+  v
+Controller
+  |
+  v
+Service
+  |
+  v
+Repository
+  |
+  v
+Database / Redis / External API
+  |
+  v
+Response
+
+Errors are routed through centralized error middleware.
+
+21. Observability
+Request
+   |
+   v
+Correlation ID
+   |
+   v
+Pino Request Log
+   |
+   v
+Business Logs
+   |
+   v
+Error Logger
+22. Graceful Shutdown
+SIGTERM / SIGINT
+       |
+       v
+Stop accepting new requests
+       |
+       v
+Finish active work
+       |
+       v
+Stop workers
+       |
+       v
+Disconnect Prisma
+       |
+       v
+Close Redis
+       |
+       v
+Exit
+23. Concurrency Test Architecture
+                 Same ShowSeat
+                      |
+        +-------------+-------------+
+        |             |             |
+        v             v             v
+     Request 1     Request 2    Request 10
+        |             |             |
+        +-------------+-------------+
+                      |
+                      v
+              PostgreSQL Lock
+                      |
+               +------+------+
+               |             |
+               v             v
+             Winner        Losers
+              201            409
+
+Current automated tests cover pessimistic concurrency, optimistic concurrency and payment idempotency.
+
+24. Consistency Boundaries
+Strong consistency
+
+PostgreSQL transactions are used for:
+
+Seat state.
+Booking state.
+Booking-seat relationships.
+Payment database state.
+Eventual consistency
+
+Acceptable for:
+
+Outbox dispatch.
+Background jobs.
+Cache.
+Logs.
+25. Production Deployment Architecture
+                    INTERNET
+                       |
+                       v
+                  +---------+
+                  |  Nginx  |
+                  | TLS/SSL |
+                  +----+----+
+                       |
+                       v
+                +--------------+
+                | Express API  |
+                +------+-------+
+                       |
+          +------------+------------+
+          |            |            |
+          v            v            v
+     PostgreSQL      Redis        Stripe
+          |            |
+          |            v
+          |          BullMQ
+          |            |
+          |            v
+          |          Worker
+          |
+          v
+        Outbox
+
+Final deployment components:
+
+API Container
+Worker Container
+PostgreSQL
+Redis
+Nginx
+26. Core System Invariants
+Seat invariant
+A ShowSeat can have at most one successful BookingSeat.
+Hold invariant
+An expired HELD seat must eventually become AVAILABLE.
+Payment invariant
+A Stripe payment event must not be applied twice.
+Idempotency invariant
+One idempotency key + one request fingerprint
+must produce one logical operation.
+Outbox invariant
+A committed critical state change must have its
+corresponding outbox event persisted in the same transaction.
+27. End-to-End Flow
+User
+ |
+ v
+Login
+ |
+ v
+JWT
+ |
+ v
+Select Show + Seats
+ |
+ v
+POST /bookings
+ |
+ v
+Validate + Rate Limit
+ |
+ v
+PostgreSQL Transaction
+ |
+ +-- Lock ShowSeats
+ +-- Verify AVAILABLE
+ +-- Create PENDING Booking
+ +-- Set seats HELD
+ +-- Create BookingSeats
+ +-- Create OutboxEvent
+ |
+ v
+COMMIT
+ |
+ v
+Stripe PaymentIntent
+ |
+ v
+Customer Payment
+ |
+ v
+Stripe Webhook
+ |
+ v
+Verify Signature
+ |
+ v
+Webhook Idempotency
+ |
+ v
+Payment = SUCCEEDED
+ |
+ v
+Saga
+ |
+ v
+Seats = BOOKED
+ |
+ v
+Booking = CONFIRMED
+
+Failure / expiry path:
+
+PENDING Booking
+      |
+      v
+Hold expires
+      |
+      v
+BullMQ delayed job
+      |
+      v
+Lock ShowSeat
+      |
+      v
+Verify HELD + expired
+      |
+      v
+Seat = AVAILABLE
+      |
+      v
+Booking = CANCELLED
+28. Final Architecture Principle
+
+The most important design decision in SeatLock is:
+
+Database is the final source of truth.
+
+Redis, Redlock, cache, BullMQ and Stripe are supporting systems. The seat-booking invariant is ultimately protected by transactional PostgreSQL state changes and concurrency control.
+
+29. Next Step
+Docker Compose
+      ↓
+PostgreSQL + Redis + API + Worker
+      ↓
+Environment configuration
+      ↓
+Health checks
+      ↓
+Integration testing
+      ↓
+EC2 deployment
+      ↓
+Nginx + HTTPS
