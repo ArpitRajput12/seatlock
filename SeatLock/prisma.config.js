@@ -12,3 +12,4 @@ export default defineConfig({
     url: process.env["DATABASE_URL"] || "postgresql://postgres:arpit%40%231234@127.0.0.1:5432/seatlock?schema=public",
   },
 });
+
