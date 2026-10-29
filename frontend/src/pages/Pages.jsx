@@ -1201,18 +1201,33 @@ export function SeatSelectionPage({ notify }) {
 
   // Load active show and seats
   const loadShowData = (id) => {
-    const cleanId = String(id || showId).trim().replace(/\s+/g, '-')
+    const cleanId = String(id || show?.id || showId).trim().replace(/\s+/g, '-')
     setState({ loading: true, error: '' })
     Promise.all([catalogApi.show(cleanId), catalogApi.showSeats(cleanId)])
       .then(([showResponse, seatResponse]) => {
         const currentShow = showResponse?.data?.show || showResponse?.show || showResponse?.data
+        if (currentShow && currentShow.id && currentShow.id !== cleanId) {
+          window.history.replaceState(null, '', `/shows/${currentShow.id}/seats`)
+        }
         setShow(currentShow || null)
         setActiveMovie(currentShow?.movie || null)
         setSeats(Array.isArray(seatResponse?.data) ? seatResponse.data : Array.isArray(seatResponse) ? seatResponse : [])
         setSelected([])
         setActivePovSeat(null)
       })
-      .catch((error) => setState({ loading: false, error: getApiError(error) }))
+      .catch(async (error) => {
+        try {
+          const allShowsRes = await catalogApi.shows()
+          const showsList = allShowsRes?.data || allShowsRes || []
+          if (Array.isArray(showsList) && showsList.length > 0) {
+            navigate(`/shows/${showsList[0].id}/seats`, { replace: true })
+            return
+          }
+        } catch (fallbackErr) {
+          console.warn('Fallback error fetching shows:', fallbackErr)
+        }
+        setState({ loading: false, error: getApiError(error) })
+      })
       .finally(() => setState((current) => ({ ...current, loading: false })))
   }
 

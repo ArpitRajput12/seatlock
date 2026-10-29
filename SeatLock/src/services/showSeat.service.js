@@ -66,12 +66,20 @@ const getShowSeatById = async (showSeatId) => {
 };
 
 const getShowSeats = async (showId) => {
-    const show = await prisma.show.findFirst({
+    let show = await prisma.show.findFirst({
         where: {
             id: showId,
             isActive: true,
         },
     });
+
+    if (!show) {
+        show = await prisma.show.findFirst({
+            where: { isActive: true },
+            orderBy: { startTime: "asc" },
+        });
+        if (show) showId = show.id;
+    }
 
     if (!show) {
         throw new AppError(

@@ -82,6 +82,7 @@ async function seedRealTheaters() {
         language: 'English',
         genre: 'Sci-Fi / Space Epic',
         posterUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1200&auto=format&fit=crop',
+        trailerUrl: 'https://res.cloudinary.com/yrhsbxba/video/upload/v1793210356/seatlock/trailers/u3ztl5w3ihf1gl5xlutr.mp4',
         releaseDate: new Date('2026-10-15'),
         isActive: true,
       },
@@ -92,6 +93,7 @@ async function seedRealTheaters() {
         language: 'English',
         genre: 'Sci-Fi / Epic',
         posterUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop',
+        trailerUrl: 'https://res.cloudinary.com/yrhsbxba/video/upload/v1793210947/posters/wgpea8bwp5whndq7wusa.mp4',
         releaseDate: new Date('2026-10-20'),
         isActive: true,
       },
@@ -102,6 +104,7 @@ async function seedRealTheaters() {
         language: 'English',
         genre: 'Action / Crime',
         posterUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1200&auto=format&fit=crop',
+        trailerUrl: 'https://res.cloudinary.com/yrhsbxba/video/upload/v1793210445/seatlock/trailers/nrjpg8jzawvtdyqdrziv.mp4',
         releaseDate: new Date('2026-10-24'),
         isActive: true,
       },
@@ -112,6 +115,7 @@ async function seedRealTheaters() {
         language: 'Hindi',
         genre: 'Action / Sci-Fi',
         posterUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1200&auto=format&fit=crop',
+        trailerUrl: 'https://res.cloudinary.com/yrhsbxba/video/upload/v1793210647/seatlock/trailers/yuokkwsbzx1ds8ectiqc.mp4',
         releaseDate: new Date('2026-11-01'),
         isActive: true,
       },
@@ -122,6 +126,7 @@ async function seedRealTheaters() {
         language: 'Hindi',
         genre: 'Thriller / Mystery',
         posterUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop',
+        trailerUrl: 'https://res.cloudinary.com/yrhsbxba/video/upload/v1793210356/seatlock/trailers/u3ztl5w3ihf1gl5xlutr.mp4',
         releaseDate: new Date('2026-11-15'),
         isActive: true,
       }
@@ -257,4 +262,7 @@ async function seedRealTheaters() {
 }
 
 seedRealTheaters();
+
+export { seedRealTheaters };
+export default seedRealTheaters;
 

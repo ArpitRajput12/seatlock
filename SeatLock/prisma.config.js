@@ -1,7 +1,13 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
-dotenv.config({ path: "SeatLock/.env" });
+import path from "path";
+import { fileURLToPath } from "url";
 import { defineConfig } from "prisma/config";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,7 +15,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] || "postgresql://postgres:arpit%40%231234@127.0.0.1:5432/seatlock?schema=public",
+    url: process.env["DATABASE_URL"],
   },
 });
-

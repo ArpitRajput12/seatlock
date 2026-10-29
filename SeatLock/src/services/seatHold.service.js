@@ -241,16 +241,34 @@ const holdShowSeatsService = async (
     userId,
     { showId, seatIds, showSeatIds, strategy = "PESSIMISTIC" }
 ) => {
-    // 1. Verify show exists
-    const show =
+    // 1. Verify show exists (with auto-healing fallback for stale IDs)
+    let show =
         (await prisma.show.findUnique({ where: { id: showId } })) ||
         (await prisma.show.findFirst({ where: { id: showId } }));
 
     if (!show) {
-        throw new AppError(
-            `Show ${showId} not found`,
-            HTTP_STATUS.NOT_FOUND
+        logger.warn(
+            { showId },
+            "Requested show not found. Auto-healing to first active scheduled show"
         );
+        show = await prisma.show.findFirst({
+            where: { isActive: true },
+            orderBy: { startTime: "asc" },
+            include: { screen: { include: { seats: true } } },
+        });
+
+        if (show) {
+            logger.info(
+                { originalShowId: showId, activeShowId: show.id },
+                "Auto-healed stale show ID to active scheduled show"
+            );
+            showId = show.id;
+        } else {
+            throw new AppError(
+                `Show ${showId} not found and no active shows available`,
+                HTTP_STATUS.NOT_FOUND
+            );
+        }
     }
 
     // 2. Resolve and deterministically sort seat IDs to eliminate deadlock risks

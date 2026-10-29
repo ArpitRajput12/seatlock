@@ -65,7 +65,22 @@ const createShowService = async (showData) => {
 };
 
 const getShowById = async (showId) => {
-    const show = await findActiveShowById(showId);
+    let show = await findActiveShowById(showId);
+
+    if (!show) {
+        show = await prisma.show.findFirst({
+            where: { isActive: true },
+            orderBy: { startTime: "asc" },
+            include: {
+                movie: true,
+                screen: {
+                    include: {
+                        theater: true,
+                    },
+                },
+            },
+        });
+    }
 
     if (!show) {
         throw new AppError(
