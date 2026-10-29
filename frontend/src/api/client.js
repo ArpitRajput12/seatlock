@@ -1,6 +1,27 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+export const RENDER_API_BASE_URL = 'https://seatlock-backend-y8ce.onrender.com/api/v1'
+
+const resolveApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL
+
+  // When deployed on Vercel or any non-localhost host, ensure we always target Render backend
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    if (envUrl && typeof envUrl === 'string' && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      return envUrl.trim().replace(/\/+$/, '')
+    }
+    return RENDER_API_BASE_URL
+  }
+
+  // Local development
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/+$/, '')
+  }
+
+  return RENDER_API_BASE_URL
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -76,7 +97,7 @@ export const getApiError = (error) => {
     return 'The SeatLock API did not respond. Check that PostgreSQL and Redis are running, then try again.'
   }
   if (!error?.response && error?.request) {
-    return 'The SeatLock API is unreachable. Start the backend on http://localhost:8000 and try again.'
+    return 'The SeatLock API is currently unreachable. Please verify your connection and try again.'
   }
   return response?.message || error?.message || 'Something went wrong. Please try again.'
 }

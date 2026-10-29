@@ -21,25 +21,47 @@ app.use(
 );
 
 // CORS configuration
+const defaultOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "https://seatlock-3hnq5fhki-arpitrajput12.vercel.app",
+    "https://seatlock-arpitrajput12.vercel.app",
+];
+
 const parseAllowedOrigins = (origins) => {
-    if (!origins) return ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"];
-    if (Array.isArray(origins)) return origins;
-    return String(origins)
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const list = [...defaultOrigins];
+    if (origins) {
+        const parsed = Array.isArray(origins)
+            ? origins
+            : String(origins)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+        list.push(...parsed);
+    }
+    return list;
 };
 
 const allowedOrigins = parseAllowedOrigins(env.corsOrigins);
 
+const isOriginAllowed = (origin) => {
+    if (!origin) return true;
+    if (allowedOrigins.includes(origin)) return true;
+    // Allow localhost and 127.0.0.1 on any port
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+    // Allow any Vercel production or preview deployment: *.vercel.app
+    if (/^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+    // Allow Render deployment hosts
+    if (/^https:\/\/.*\.onrender\.com$/.test(origin)) return true;
+    return false;
+};
+
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        const isAllowed =
-            allowedOrigins.includes(origin) ||
-            Boolean(origin.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/));
-
-        if (isAllowed) return callback(null, true);
+        if (isOriginAllowed(origin)) {
+            return callback(null, true);
+        }
         return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
